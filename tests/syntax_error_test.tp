@@ -1,0 +1,3 @@
+TASK brokenTask {
+    RUN "script.sh"
+    AT 09:00

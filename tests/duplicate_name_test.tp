@@ -1,0 +1,8 @@
+TASK backup {
+    RUN "script1.sh"
+    AT 10:00
+}
+TASK backup {
+    RUN "script2.sh"
+    AT 11:00
+}

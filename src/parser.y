@@ -40,7 +40,7 @@ int has_cycle(int v) {
 
 %union { char *str; }
 
-%token TASK RUN EVERY DAY WEEK ON AT AFTER IF SUCCESS
+%token TASK RUN EVERY DAY WEEK ON AT AFTER IF SUCCESS FAILURE
 %token <str> ID STRING TIME
 
 %%
@@ -78,14 +78,17 @@ run_stmt: RUN STRING { printf("Script: %s\n", $2); } ;
 schedule_stmt: time_sched | dep_sched ;
 
 time_sched: EVERY DAY AT TIME { printf("Schedule: EVERY DAY AT %s\n", $4); }
+          | EVERY WEEK ON ID AT TIME { printf("Schedule: EVERY WEEK ON %s AT %s\n", $4, $6); }
           | AT TIME { printf("Schedule: AT %s\n", $2); } ;
 
-dep_sched: AFTER ID optional_condition { 
+dep_sched: AFTER ID optional_condition {
     strcpy(task_list_arr[task_count].dependency, $2);
-    printf("Depends on: %s\n", $2); 
+    printf("Depends on: %s\n", $2);
 };
 
-optional_condition: IF SUCCESS { printf("Condition: success\n"); } | ;
+optional_condition: IF SUCCESS { printf("Condition: success\n"); } 
+                  | IF FAILURE { printf("Condition: failure\n"); }
+                  | ;
 
 %%
 

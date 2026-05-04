@@ -71,11 +71,43 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern int yylex();
 void yyerror(const char *s);
 
-#line 79 "parser.tab.c"
+typedef struct {
+    char name[50];
+    char dependency[50];
+} Task;
+
+Task task_list_arr[100];
+int task_count = 0;
+int adj[100][100];
+int visited[100];
+int stack[100];
+
+int find_task(char *name) {
+    for (int i = 0; i < task_count; i++) {
+        if (strcmp(task_list_arr[i].name, name) == 0) return i;
+    }
+    return -1;
+}
+
+int has_cycle(int v) {
+    visited[v] = 1;
+    stack[v] = 1;
+    for (int i = 0; i < task_count; i++) {
+        if (adj[v][i]) {
+            if (stack[i]) return 1;
+            if (!visited[i] && has_cycle(i)) return 1;
+        }
+    }
+    stack[v] = 0;
+    return 0;
+}
+
+#line 111 "parser.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -517,8 +549,8 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    16,    16,    18,    18,    20,    22,    24,    24,    26,
-      27,    29,    31,    31
+       0,    48,    48,    64,    64,    66,    76,    78,    78,    80,
+      81,    83,    88,    88
 };
 #endif
 
@@ -1088,49 +1120,74 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: task_list  */
-#line 16 "parser.y"
-                   { printf("--- EXECUTION COMPLETE ---\n"); }
-#line 1094 "parser.tab.c"
+#line 48 "parser.y"
+                   {
+    for (int i = 0; i < task_count; i++) {
+        if (strlen(task_list_arr[i].dependency) > 0) {
+            int dep_idx = find_task(task_list_arr[i].dependency);
+            if (dep_idx != -1) adj[i][dep_idx] = 1;
+        }
+    }
+    for (int i = 0; i < task_count; i++) {
+        if (has_cycle(i)) {
+            printf("[ERROR] Circular dependency detected!\n");
+            exit(1);
+        }
+    }
+    printf("--- EXECUTION COMPLETE ---\n");
+}
+#line 1140 "parser.tab.c"
     break;
 
   case 5: /* task_definition: TASK ID '{' run_stmt schedule_stmt '}'  */
-#line 20 "parser.y"
-                                                        { printf("Executing Task: %s\n", (yyvsp[-4].str)); }
-#line 1100 "parser.tab.c"
+#line 66 "parser.y"
+                                                        {
+    if (find_task((yyvsp[-4].str)) != -1) {
+        printf("[ERROR] Duplicate task name detected: %s\n", (yyvsp[-4].str));
+        exit(1);
+    }
+    strcpy(task_list_arr[task_count].name, (yyvsp[-4].str));
+    printf("Executing Task: %s\n", (yyvsp[-4].str));
+    task_count++;
+}
+#line 1154 "parser.tab.c"
     break;
 
   case 6: /* run_stmt: RUN STRING  */
-#line 22 "parser.y"
+#line 76 "parser.y"
                      { printf("Script: %s\n", (yyvsp[0].str)); }
-#line 1106 "parser.tab.c"
+#line 1160 "parser.tab.c"
     break;
 
   case 9: /* time_sched: EVERY DAY AT TIME  */
-#line 26 "parser.y"
+#line 80 "parser.y"
                               { printf("Schedule: EVERY DAY AT %s\n", (yyvsp[0].str)); }
-#line 1112 "parser.tab.c"
+#line 1166 "parser.tab.c"
     break;
 
   case 10: /* time_sched: AT TIME  */
-#line 27 "parser.y"
+#line 81 "parser.y"
                     { printf("Schedule: AT %s\n", (yyvsp[0].str)); }
-#line 1118 "parser.tab.c"
+#line 1172 "parser.tab.c"
     break;
 
   case 11: /* dep_sched: AFTER ID optional_condition  */
-#line 29 "parser.y"
-                                       { printf("Depends on: %s\n", (yyvsp[-1].str)); }
-#line 1124 "parser.tab.c"
+#line 83 "parser.y"
+                                       { 
+    strcpy(task_list_arr[task_count].dependency, (yyvsp[-1].str));
+    printf("Depends on: %s\n", (yyvsp[-1].str)); 
+}
+#line 1181 "parser.tab.c"
     break;
 
   case 12: /* optional_condition: IF SUCCESS  */
-#line 31 "parser.y"
+#line 88 "parser.y"
                                { printf("Condition: success\n"); }
-#line 1130 "parser.tab.c"
+#line 1187 "parser.tab.c"
     break;
 
 
-#line 1134 "parser.tab.c"
+#line 1191 "parser.tab.c"
 
       default: break;
     }
@@ -1323,7 +1380,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 33 "parser.y"
+#line 90 "parser.y"
 
 
 void yyerror(const char *s) { fprintf(stderr, "Error: %s\n", s); }
@@ -1332,4 +1389,4 @@ int main() {
     printf("Parsing TaskLang++ input...\n");
     printf("EXECUTION START\n");
     return yyparse();
-} 
+}

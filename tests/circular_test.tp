@@ -1,0 +1,9 @@
+TASK taskA {
+    RUN "scriptA.sh"
+    AFTER taskB
+}
+
+TASK taskB {
+    RUN "scriptB.sh"
+    AFTER taskA
+}
